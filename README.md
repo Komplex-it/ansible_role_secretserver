@@ -21,6 +21,8 @@ Requirements
     The Delinea Secret Server Python SDK "python-tss-sdk" is required, see: https://pypi.org/project/python-tss-sdk/
     (community.general.tss requires it)
 
+    To install it, run: python -m pip install python-tss-sdk
+
 Role Variables
 --------------
 
