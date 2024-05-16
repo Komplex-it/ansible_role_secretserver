@@ -1,0 +1,13 @@
+---
+- name: Check-in secret
+  ansible.builtin.uri:
+    url: "{{ ss_base_url }}api/v1/secrets/{{ secret_id }}/check-in"
+    method: POST
+    status_code: 200
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ temp_token }}"
+  changed_when: true
+  ignore_errors: true
+  no_log: true
+

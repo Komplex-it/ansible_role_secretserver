@@ -1,0 +1,21 @@
+---
+- name: Generate token
+  ansible.builtin.uri:
+    url: https://{{ ss_hostname }}/oauth2/token
+    method: POST
+    status_code: 200
+    body:
+      username: "{{ ss_serviceaccount['name'] }}"
+      password: "{{ ss_serviceaccount['password'] }}"
+      grant_type: "password"
+    body_format: form-urlencoded
+  changed_when: true
+  register: token_debug
+  no_log: true
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    temp_token: "{{ token_debug.json.access_token }}"
+    ss_base_url: https://{{ ss_hostname }}/
+
+
