@@ -32,8 +32,9 @@ Example Playbook
 
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
+```yaml
 ---
-- name: Using the secret server role
+- name: Example playbook for using the secretserver role
   hosts: all
   become: true
   gather_facts: false
@@ -113,7 +114,6 @@ Including an example of how to use your role (for instance, with variables passe
           - "Username: {{ ansible_user }}"
           - "Password: {{ ansible_password }}"
           - "Secret ID: {{ secret_id }}"
-#          - "{{ temp_secret }}"
 
 ################################## Server Operations
 
@@ -128,7 +128,7 @@ Including an example of how to use your role (for instance, with variables passe
         tasks_from: check-in
         apply:
           delegate_to: localhost
-
+```
 
 
 License
