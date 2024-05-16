@@ -8,9 +8,12 @@ Requirements
 
 1. Lookup plugin: community.general.tss
    
-  This role is dependent on the community.general.tss lookup plugin, which is part of the community.general collection.
-  You might already have this collection installed if you are using the ansible package. It is not included in ansible-core. To check whether it is installed, run ansible-galaxy collection list.
-  To install it, use: ansible-galaxy collection install community.general. You need further requirements to be able to use this lookup plugin, see Requirements for details.
+    This role is dependent on the community.general.tss lookup plugin, which is part of the community.general collection.
+
+    You might already have this collection installed if you are using the ansible package.It is not included in ansible-core.
+
+    To check whether it is installed, run ansible-galaxy collection list.
+    To install it, use: ansible-galaxy collection install community.general.
 
 2. Python dependency: python-tss-sdk
 
