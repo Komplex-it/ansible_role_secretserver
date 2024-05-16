@@ -13,12 +13,13 @@ Requirements
     You might already have this collection installed if you are using the ansible package.It is not included in ansible-core.
 
     To check whether it is installed, run ansible-galaxy collection list.
+
     To install it, use: ansible-galaxy collection install community.general.
 
 2. Python dependency: python-tss-sdk
 
-  The Delinea Secret Server Python SDK "python-tss-sdk" is required: https://pypi.org/project/python-tss-sdk/
-  (community.general.tss requires it)
+    The Delinea Secret Server Python SDK "python-tss-sdk" is required, see: https://pypi.org/project/python-tss-sdk/
+    (community.general.tss requires it)
 
 Role Variables
 --------------
