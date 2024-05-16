@@ -1,7 +1,7 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+A work-in-progress role to fetch passwords from Delinea Secret Server.
 
 Requirements
 ------------
@@ -30,14 +30,14 @@ A list of other roles hosted on Galaxy should go here, plus any details in regar
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
 ```yaml
 ---
-- name: Example playbook for using the secretserver role
+- name: Using the secret server role
   hosts: all
   become: true
   gather_facts: false
+  vars:
+    ansible_controller: localhost # Use localhost or replace with actual ansible controller
 
   tasks:
 
@@ -45,26 +45,26 @@ Including an example of how to use your role (for instance, with variables passe
       ansible.builtin.include_role:
         name: secretserver
         apply:
-          delegate_to: localhost
+          delegate_to: "{{ ansible_controller }}"
           run_once: true
       vars:
-        ss_hostname: my.secretserver.eu
+        ss_hostname: <my.secretserver.eu> # Your Delinea Secret Server hostname
         ss_serviceaccount:
-            name: <username of a secret server account with suffiecient permissions>
+            name: <ServiceAccount> # username of an account with sufficient permissions to access secrets
             password: !vault |
               $ANSIBLE_VAULT;1.1;AES256
-              <here goes the encrypted password of the account>
+              <encrypted password> # ansible-vault encrypt_string --vault-password-file /path/to/file
 
     - name: dmz.test.local servers
       block:
 
         - name: Set name of secret to fetch
           ansible.builtin.set_fact:
-            secret_name: administrator_{{ inventory_hostname }}
+            secret_name: administrator_{{ inventory_hostname }} # the name of the secret to fetch from secret server
 
         - name: Set path to the secrets
           ansible.builtin.set_fact:
-            ss_secret_path: '\Server Admins\'
+            ss_secret_path: '\Server Admins\' # the actual folder path as seen on the secret server web interface
 
       when: '"dmz.test.local" in inventory_hostname'
 
@@ -100,7 +100,7 @@ Including an example of how to use your role (for instance, with variables passe
         name: secretserver
         tasks_from: fetch_secret
         apply:
-          delegate_to: localhost
+          delegate_to: "{{ ansible_controller }}"
 
     - name: Set username and password for each server
       ansible.builtin.set_fact:
@@ -120,6 +120,11 @@ Including an example of how to use your role (for instance, with variables passe
     - name: Gather facts
       ansible.builtin.setup:
 
+    - name: Install package
+      ansible.builtin.package:
+        name: httpd
+        state: latest
+
 #################################
 
     - name: Check-in
@@ -127,7 +132,8 @@ Including an example of how to use your role (for instance, with variables passe
         name: secretserver
         tasks_from: check-in
         apply:
-          delegate_to: localhost
+          delegate_to: "{{ ansible_controller }}"
+
 ```
 
 
