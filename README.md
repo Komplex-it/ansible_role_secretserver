@@ -1,4 +1,4 @@
-Role Name
+Ansible Role: secretserver
 =========
 
 A work-in-progress role to fetch passwords from Delinea Secret Server.
