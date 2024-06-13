@@ -1,7 +1,13 @@
 ---
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    ss_base_url: "https://{{ ss_hostname }}/"
+ 
 - name: Generate token
   ansible.builtin.uri:
-    url: https://{{ ss_hostname }}/oauth2/token
+#    url: "{{ hostvars[ansible_controller]['ss_base_url'] }}oauth2/token"
+    url: "{{ ss_base_url }}oauth2/token"
     method: POST
     status_code: 200
     body:
@@ -13,8 +19,6 @@
   register: ss_tokens
 #  no_log: true
   loop: "{{ ss_serviceaccounts | dict2items }}"
-#  loop_control:
-#   extended: true
 
 - name: debug
   ansible.builtin.debug:
@@ -28,19 +32,12 @@
   ansible.builtin.debug:
     msg: "{{ ss_tokens.results | json_query(query) }}"
   vars:
-#    query: "[?invocation.module_args.body.username=='ServiceAccount'].json.access_token | [0]"
     query: "[?item.key=='ServiceAccount'].json.access_token | [0]"
 
 - name: Get access token based on username | ServiceAccount2
   ansible.builtin.debug:
     msg: "{{ ss_tokens.results | json_query(query) }}"
   vars:
-#    query: "[?invocation.module_args.body.username=='ServiceAccount'].json.access_token | [0]"
     query: "[?item.key=='ServiceAccount2'].json.access_token | [0]"
 
-
-- name: Set facts
-  ansible.builtin.set_fact:
-#    temp_token: "{{ token_debug.json.access_token }}"
-    ss_base_url: https://{{ ss_hostname }}/
 
