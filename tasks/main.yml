@@ -18,24 +18,8 @@
   register: ss_tokens
   loop: "{{ ss_serviceaccounts | dict2items }}"
 
-- name: debug
-  ansible.builtin.debug:
-    msg: "{{ ss_tokens.results }}"
-
-- name: Set serviceaccounts facts
-  ansible.builtin.debug:
-    msg: "{{ ss_tokens | json_query('results[*].json.access_token') }}"
-
-- name: Get access token based on username | ServiceAccount
-  ansible.builtin.debug:
-    msg: "{{ ss_tokens.results | json_query(query) }}"
-  vars:
-    query: "[?item.key=='ServiceAccount'].json.access_token | [0]"
-
-- name: Get access token based on username | ServiceAccount2
-  ansible.builtin.debug:
-    msg: "{{ ss_tokens.results | json_query(query) }}"
-  vars:
-    query: "[?item.key=='ServiceAccount2'].json.access_token | [0]"
+- name: Initialize final secrets list
+  set_fact:
+    ss_secrets_all_final: []
 
 

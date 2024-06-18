@@ -1,13 +1,11 @@
 ---
-- name: Set json query
+- name: Set json query for {{ outer_item.secret }}
   ansible.builtin.set_fact:
     json_query_token: "[?item.key=='{{ outer_item.ss_serviceaccount }}'].json.access_token | [0]"
-  no_log: true
 
-- name: Set token
+- name: Set token for {{ outer_item.secret }}
   ansible.builtin.set_fact:
     sa_token: "{{ ss_tokens.results | json_query(json_query_token) }}"
-  no_log: true
 
 - name: Check-in {{ outer_item.secret }} 
   ansible.builtin.uri:
@@ -19,5 +17,4 @@
       Authorization: "Bearer {{ sa_token }}"
   changed_when: true
   ignore_errors: true
-  no_log: true
 
