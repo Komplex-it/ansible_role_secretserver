@@ -8,7 +8,7 @@ Requirements
 
 1. Lookup plugins: 
 
-    community.general.tss
+    community.general.tss  
     community.generel.json_query   
 
     This role is dependent on the community.general.tss lookup plugin and the community.generel.json_query plugin, which is part of the community.general collection.
@@ -21,7 +21,7 @@ Requirements
 
 2. Python dependencies: 
 
-    python-tss-sdk
+    python-tss-sdk  
     jmespath
 
     The Delinea Secret Server Python SDK "python-tss-sdk" is required, see: https://pypi.org/project/python-tss-sdk/ (community.general.tss requires it)
@@ -30,11 +30,11 @@ Requirements
     To install them, run: 
     `python -m pip install python-tss-sdk jmespath`
 
-    In case the system python is different from what ansible uses:
+    In case the system python is different from what ansible uses, they can be installed like this:
     ```bash
     ansible --version | grep "python version" # the python that ansible uses.
     yum install python3.12-pip # install pip for that same python version, in this example python 3.12.
-    python3.12 -m pip install python-tss-sdk jmespath# install the python modules under that same python version.
+    python3.12 -m pip install python-tss-sdk jmespath # install the python modules under that same python version.
     ```
 
 
