@@ -6,9 +6,12 @@ A work-in-progress role to fetch passwords from Delinea Secret Server.
 Requirements
 ------------
 
-1. Lookup plugin: community.general.tss
-   
-    This role is dependent on the community.general.tss lookup plugin, which is part of the community.general collection.
+1. Lookup plugins: 
+
+    community.general.tss
+    community.generel.json_query   
+
+    This role is dependent on the community.general.tss lookup plugin and the community.generel.json_query plugin, which is part of the community.general collection.
 
     You might already have this collection installed if you are using the ansible package.It is not included in ansible-core.
 
@@ -16,12 +19,24 @@ Requirements
 
     To install it, run: `ansible-galaxy collection install community.general`
 
-2. Python dependency: python-tss-sdk
+2. Python dependencies: 
 
-    The Delinea Secret Server Python SDK "python-tss-sdk" is required, see: https://pypi.org/project/python-tss-sdk/
-    (community.general.tss requires it)
+    python-tss-sdk
+    jmespath
 
-    To install it, run: `python -m pip install python-tss-sdk`
+    The Delinea Secret Server Python SDK "python-tss-sdk" is required, see: https://pypi.org/project/python-tss-sdk/ (community.general.tss requires it)
+    "jmespath" is required for json queries.
+
+    To install them, run: 
+    `python -m pip install python-tss-sdk jmespath`
+
+    In case the system python is different from what ansible uses:
+    ```bash
+    ansible --version | grep "python version" # the python that ansible uses.
+    yum install python3.12-pip # install pip for that same python version, in this example python 3.12.
+    python3.12 -m pip install python-tss-sdk jmespath# install the python modules under that same python version.
+    ```
+
 
 Role Variables
 --------------
@@ -43,7 +58,17 @@ Example Playbook
   become: true
   gather_facts: false
   vars:
-    ansible_controller: localhost # Use localhost or replace with actual ansible controller
+    ansible_controller: localhost
+
+  vars_prompt:
+    - name: serviceaccount_password
+      prompt: Password for ServiceAccount
+      private: true
+      unsafe: true
+    - name: serviceaccount2_password
+      prompt: Password for ServiceAccount2
+      private: true
+      unsafe: true
 
   tasks:
 
@@ -53,53 +78,90 @@ Example Playbook
         apply:
           delegate_to: "{{ ansible_controller }}"
           run_once: true
+          no_log: true
       vars:
-        ss_hostname: <my.secretserver.eu> # Your Delinea Secret Server hostname
-        ss_serviceaccount:
-            name: <ServiceAccount> # username of an account with sufficient permissions to access secrets
-            password: !vault |
-              $ANSIBLE_VAULT;1.1;AES256
-              <encrypted password> # ansible-vault encrypt_string --vault-password-file /path/to/file
+        ss_hostname: <secretserver hostname> # e.g. test.secretservercloud.eu
+        ss_serviceaccounts:
+         ServiceAccount:
+           password: "{{ serviceaccount_password }}"
+         ServiceAccount2:
+           password: "{{ serviceaccount2_password }}"
 
-    - name: dmz.test.local servers
-      block:
 
-        - name: Set name of secret to fetch
-          ansible.builtin.set_fact:
-            secret_name: administrator_{{ inventory_hostname }} # the name of the secret to fetch from secret server
+#        ss_serviceaccounts:
+#          ServiceAccount:
+#           password: !vault |
+#             $ANSIBLE_VAULT;1.1;AES256
+#         ServiceAccount2:
+#           password: !vault |
+#             $ANSIBLE_VAULT;1.1;AES256
 
-        - name: Set path to the secrets
-          ansible.builtin.set_fact:
-            ss_secret_path: '\Server Admins\' # the actual folder path as seen on the secret server web interface
 
-      when: '"dmz.test.local" in inventory_hostname'
+################################## Required vars - can be set elsewhere
 
-    - name: test.local servers
-      block:
 
-        - name: Set name of secret to fetch
-          ansible.builtin.set_fact:
-            secret_name: PAM-DomainAdmin03
+## can be moved to e.g. group_vars/all/secretserver_accounts
+#    - name: All secrets to fetch
+#      ansible.builtin.set_fact:
+#        ss_secrets:
+#          - secret: PAM-DomainAdmin03
+#            ss_secret_path: '\KITDemo\Domain Admin\'
+#            ss_serviceaccount: ServiceAccount
+#          - secret: PAM-DomainAdmin04
+#            ss_secret_path: '\KITDemo\Domain Admin\'
+#            ss_serviceaccount: ServiceAccount2
+#        ss_secrets_unique:
+#          - secret: administrator_{{ inventory_hostname }}
+#            ss_secret_path: '\KITDemo\Server Admins\'
+#            ss_serviceaccount: ServiceAccount
+#      delegate_to: "{{ ansible_controller }}"
 
-        - name: Set path to the secrets
-          ansible.builtin.set_fact:
-            ss_secret_path: '\Domain Admin\'
+## can be moved under each group e.g. group_vars/dmz/secretserver_secrets or groups_vars/ss_secret_administrator/vars
+#    - name: dmz.test.local servers
+#      block:
+#
+#        - name: set secretserver vars for group
+#          ansible.builtin.set_fact:
+#            ss_secret: administrator_{{ inventory_hostname }}
+#            unique_secret: true
+#
+#      when: '"dmz.test.local" in inventory_hostname'
+#
+#    - name: test.local servers
+#      block:
+#
+#        - name: set secretserver vars for group
+#          ansible.builtin.set_fact:
+#            ss_secret: PAM-DomainAdmin03
+#
+#      when: 'inventory_hostname_short + ".test.local" in inventory_hostname'
+#
+#    - name: .local servers
+#      block:
+#
+#        - name: set secretserver vars for group
+#          ansible.builtin.set_fact:
+#            ss_secret: PAM-DomainAdmin04
+#
+#      when: 'inventory_hostname_short + ".local" in inventory_hostname'
 
-      when: 'inventory_hostname_short + ".test.local" in inventory_hostname'
+##################################
 
-    - name: .local servers
-      block:
 
-        - name: Set name of secret to fetch
-          ansible.builtin.set_fact:
-            secret_name: PAM-DomainAdmin04
+    - name: Combine all unique secrets
+      set_fact:
+        all_unique_secrets: "{{ all_unique_secrets | default([]) + hostvars[item]['ss_secrets_unique'] }}"
+      delegate_to: "{{ ansible_controller }}"
+      run_once: true
+      with_items: "{{ groups['all'] }}"
+      when: hostvars[item]['unique_secret'] is defined
 
-        - name: Set path to the secrets
-          ansible.builtin.set_fact:
-            ss_secret_path: '\Domain Admin\'
-
-      when: 'inventory_hostname_short + ".local" in inventory_hostname'
-
+    - name: merge lists
+      set_fact:
+        ss_secrets_all: "{{ ss_secrets + all_unique_secrets }}"
+      delegate_to: "{{ ansible_controller }}"
+      run_once: true
+      when: all_unique_secrets is defined
 
     - name: Fetch secrets
       ansible.builtin.include_role:
@@ -107,19 +169,21 @@ Example Playbook
         tasks_from: fetch_secret
         apply:
           delegate_to: "{{ ansible_controller }}"
+          no_log: true
+      loop: "{{ ss_secrets_all }}"
+      loop_control:
+        loop_var: outer_item
+      run_once: true
 
     - name: Set username and password for each server
       ansible.builtin.set_fact:
-        ansible_user: "{{ username }}"
-        ansible_password: "{{ secret }}"
+        ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}"
+        ansible_password: "{{ ss_secrets_all_final | json_query(query_pw) }}"
+      vars:
+        query_username: "[?secret == '{{ ss_secret }}'].username | [0]"
+        query_pw: "[?secret == '{{ ss_secret }}'].pw | [0]"
+      delegate_to: "{{ ansible_controller }}"
 
-    - name: Debug
-      ansible.builtin.debug:
-        msg:
-          - "SecretServer Secret: {{ secret_name }}"
-          - "Username: {{ ansible_user }}"
-          - "Password: {{ ansible_password }}"
-          - "Secret ID: {{ secret_id }}"
 
 ################################## Server Operations
 
@@ -139,6 +203,11 @@ Example Playbook
         tasks_from: check-in
         apply:
           delegate_to: "{{ ansible_controller }}"
+          no_log: true
+      loop: "{{ ss_secrets_all_final }}"
+      loop_control:
+        loop_var: outer_item
+      run_once: true
 
 ```
 
