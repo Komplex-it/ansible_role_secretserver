@@ -87,7 +87,8 @@ Example Playbook
          ServiceAccount2:
            password: "{{ serviceaccount2_password }}"
 
-
+## can be used instead of prompting for service account passwords.
+## however, it is probably safer and smarter to just input them manually - they are accounts with access to secrets for all systems after all, and should be rotated.
 #        ss_serviceaccounts:
 #          ServiceAccount:
 #           password: !vault |
