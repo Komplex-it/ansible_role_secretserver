@@ -1,9 +1,14 @@
 ---
 
+## Authenticate
+
 - name: Prepare variables
   ansible.builtin.set_fact:
     ss_base_url: "https://{{ ss_hostname }}/"
     ss_secrets_all_final: []
+  delegate_to: "{{ ansible_controller }}"
+  run_once: true
+  no_log: true
 
 - name: Get access token
   ansible.builtin.uri:
@@ -18,4 +23,66 @@
   changed_when: true
   register: ss_tokens
   loop: "{{ ss_serviceaccounts | dict2items }}"
+  delegate_to: "{{ ansible_controller }}"
+  run_once: true
+  no_log: true
+
+## List of secrets
+
+- name: Create list of unique secrets to fetch
+  set_fact:
+    all_unique_secrets: "{{ all_unique_secrets | default([]) + hostvars[item]['ss_secrets_unique'] }}"
+  delegate_to: "{{ ansible_controller }}"
+  run_once: true
+  with_items: "{{ groups['all'] }}"
+  when: hostvars[item]['unique_secret'] is defined
+  no_log: true
+
+- name: Merge list of unique secrets and shared secrets
+  set_fact:
+    ss_secrets_all: "{{ ss_secrets + all_unique_secrets }}"
+  delegate_to: "{{ ansible_controller }}"
+  run_once: true
+  when: all_unique_secrets is defined
+
+## Fetch secrets
+
+- name: Check-out and fetch secrets
+  ansible.builtin.include_role:
+    name: secretserver
+    tasks_from: fetch_secret
+    apply:
+      delegate_to: "{{ ansible_controller }}"
+      #      no_log: true
+  loop: "{{ ss_secrets_all }}"
+  loop_control:
+    loop_var: outer_item
+  run_once: true
+
+## Set username and password vars
+
+- name: Set username for domain logins
+  ansible.builtin.set_fact:
+    ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}@{{ ss_secrets_all_final | json_query(query_domain) }}"
+  vars:
+    query_username: "[?secret == '{{ ss_secret }}'].username | [0]"
+    query_domain: "[?secret == '{{ ss_secret }}'].domain | [0]"
+  when: ss_secrets_all_final | json_query(query_domain) != 'NONE'
+
+- name: Set username for local logins
+  ansible.builtin.set_fact:
+    ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}"
+  vars:
+    query_username: "[?secret == '{{ ss_secret }}'].username | [0]"
+    query_domain: "[?secret == '{{ ss_secret }}'].domain | [0]"
+  when: ss_secrets_all_final | json_query(query_domain) == 'NONE'
+
+- name: Set password
+  ansible.builtin.set_fact:
+    ansible_password: "{{ ss_secrets_all_final | json_query(query_pw) }}"
+  vars:
+    query_pw: "[?secret == '{{ ss_secret }}'].pw | [0]"
+  delegate_to: "{{ ansible_controller }}"
+
+
 
