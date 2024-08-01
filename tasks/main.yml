@@ -36,7 +36,7 @@
   run_once: true
   with_items: "{{ groups['all'] }}"
   when: hostvars[item]['unique_secret'] is defined
-  no_log: true
+  #  no_log: true
 
 - name: Merge list of unique secrets and shared secrets
   set_fact:

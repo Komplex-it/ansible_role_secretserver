@@ -2,18 +2,16 @@
 
 - name: Check-in secrets
   ansible.builtin.uri:
-    url: "{{ ss_base_url }}api/v1/secrets/{{ outer_item.secret_id }}/check-in"
+    url: "{{ ss_base_url }}api/v1/secrets/{{ item.secret_id }}/check-in"
     method: POST
     status_code: 200
     headers:
       Content-Type: application/json
-      Authorization: "Bearer {{ outer_item.access_token }}"
+      Authorization: "Bearer {{ item.access_token }}"
   changed_when: true
   ignore_errors: true
   delegate_to: "{{ ansible_controller }}"
   no_log: true
   loop: "{{ ss_secrets_all_final }}"
-  loop_control:
-    loop_var: outer_item
   run_once: true
 

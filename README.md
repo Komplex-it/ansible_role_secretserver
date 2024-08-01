@@ -37,7 +37,7 @@ Requirements
     python3.12 -m pip install python-tss-sdk jmespath # install the python modules under that same python version.
     ```
 
-(3.) Kerberos requirements:
+3. Kerberos requirements (only required for kerberos logins):
 
     ```bash
     yum install gcc python3.11-devel krb5-workstation krb5-devel krb5-libs
@@ -49,7 +49,53 @@ Requirements
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+1. Define list with secrets to fetch including path and service account in group_vars/all/xx (will probably be moved to roles/secretserver/vars/main.yml at some point, but that doesnt work for now):
+    Example of a group_vars/all/secretserver.yml:
+
+    ```yaml
+    ---
+    ss_secrets:
+      - secret: PAM-DomainAdmin01
+        ss_secret_path: '\demo.local\Domain Admins\'
+        ss_serviceaccount: ServiceAccount
+      - secret: PAM-DmzDomainAdmin01
+        ss_secret_path: '\dmz.demo.local\Domain Admins\'
+        ss_serviceaccount: ServiceAccount
+    ss_secrets_unique:
+      - secret: Administrator_{{ inventory_hostname }}
+        ss_secret_path: '\workgroup.local\Server Admins\'
+        ss_serviceaccount: ServiceAccount
+    ```
+
+2. Define what secret each server/group should use, either directly in the inventory or via group vars.
+    Example of setting it in an inventory ini file:
+
+    ```ini
+    [demo_local]
+    app01.demo.local
+    db01.demo.local
+
+    [demo_local:vars]
+    ss_secret=PAM-DomainAdmin01
+
+
+
+    [dmz_demo_local]
+    web01.dmz.demo.local
+
+    [dmz_demo_local:vars]
+    ss_secret=PAM-DmzDomainAdmin01
+
+
+
+    [workgroup_local]
+    bck01.workgroup.local
+
+    [workgroup_local:vars]
+    ss_secret=Administrator_{{ inventory_hostname }}
+    unique_secret=true
+    ```
+
 
 Dependencies
 ------------
@@ -61,9 +107,8 @@ Example Playbook
 
 ```yaml
 ---
-- name: Using the secret server role
+- name: Delinea Secret Server demo
   hosts: all
-  become: true
   gather_facts: false
   vars:
     ansible_controller: localhost
@@ -73,150 +118,32 @@ Example Playbook
       prompt: Password for ServiceAccount
       private: true
       unsafe: true
-    - name: serviceaccount2_password
-      prompt: Password for ServiceAccount2
-      private: true
-      unsafe: true
+#    - name: serviceaccount2_password
+#      prompt: Password for ServiceAccount2
+#      private: true
+#      unsafe: true
 
   tasks:
 
-    - name: Authenticate with SecretServer
+    - name: Fetch credentials from Delinea Secret Server
       ansible.builtin.include_role:
         name: secretserver
-        apply:
-          delegate_to: "{{ ansible_controller }}"
-          run_once: true
-          no_log: true
       vars:
-        ss_hostname: <secretserver hostname> # e.g. test.secretservercloud.eu
+        ss_hostname: demokit.secretservercloud.eu
         ss_serviceaccounts:
-         ServiceAccount:
-           password: "{{ serviceaccount_password }}"
-         ServiceAccount2:
-           password: "{{ serviceaccount2_password }}"
+          ServiceAccount:
+            password: "{{ serviceaccount_password }}"
+#          ServiceAccount2:
+#            password: "{{ serviceaccount2_password }}"
 
-## can be used instead of prompting for service account passwords.
-## however, it is probably safer and smarter to just input them manually - they are accounts with access to secrets for all systems after all, and should be rotated.
-#        ss_serviceaccounts:
-#          ServiceAccount:
-#           password: !vault |
-#             $ANSIBLE_VAULT;1.1;AES256
-#         ServiceAccount2:
-#           password: !vault |
-#             $ANSIBLE_VAULT;1.1;AES256
-
-
-################################## Required vars - can be set elsewhere
-
-
-## can be moved to e.g. group_vars/all/secretserver_accounts
-#    - name: All secrets to fetch
-#      ansible.builtin.set_fact:
-#        ss_secrets:
-#          - secret: PAM-DomainAdmin03
-#            ss_secret_path: '\KITDemo\Domain Admin\'
-#            ss_serviceaccount: ServiceAccount
-#          - secret: PAM-DomainAdmin04
-#            ss_secret_path: '\KITDemo\Domain Admin\'
-#            ss_serviceaccount: ServiceAccount2
-#        ss_secrets_unique:
-#          - secret: administrator_{{ inventory_hostname }}
-#            ss_secret_path: '\KITDemo\Server Admins\'
-#            ss_serviceaccount: ServiceAccount
-#      delegate_to: "{{ ansible_controller }}"
-
-## can be moved under each group e.g. group_vars/dmz/secretserver_secrets or groups_vars/ss_secret_administrator/vars
-#    - name: dmz.test.local servers
-#      block:
-#
-#        - name: set secretserver vars for group
-#          ansible.builtin.set_fact:
-#            ss_secret: administrator_{{ inventory_hostname }}
-#            unique_secret: true
-#
-#      when: '"dmz.test.local" in inventory_hostname'
-#
-#    - name: test.local servers
-#      block:
-#
-#        - name: set secretserver vars for group
-#          ansible.builtin.set_fact:
-#            ss_secret: PAM-DomainAdmin03
-#
-#      when: 'inventory_hostname_short + ".test.local" in inventory_hostname'
-#
-#    - name: .local servers
-#      block:
-#
-#        - name: set secretserver vars for group
-#          ansible.builtin.set_fact:
-#            ss_secret: PAM-DomainAdmin04
-#
-#      when: 'inventory_hostname_short + ".local" in inventory_hostname'
-
-##################################
-
-
-    - name: Combine all unique secrets
-      set_fact:
-        all_unique_secrets: "{{ all_unique_secrets | default([]) + hostvars[item]['ss_secrets_unique'] }}"
-      delegate_to: "{{ ansible_controller }}"
-      run_once: true
-      with_items: "{{ groups['all'] }}"
-      when: hostvars[item]['unique_secret'] is defined
-
-    - name: merge lists
-      set_fact:
-        ss_secrets_all: "{{ ss_secrets + all_unique_secrets }}"
-      delegate_to: "{{ ansible_controller }}"
-      run_once: true
-      when: all_unique_secrets is defined
-
-    - name: Fetch secrets
-      ansible.builtin.include_role:
-        name: secretserver
-        tasks_from: fetch_secret
-        apply:
-          delegate_to: "{{ ansible_controller }}"
-          no_log: true
-      loop: "{{ ss_secrets_all }}"
-      loop_control:
-        loop_var: outer_item
-      run_once: true
-
-    - name: Set username and password for each server
-      ansible.builtin.set_fact:
-        ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}"
-        ansible_password: "{{ ss_secrets_all_final | json_query(query_pw) }}"
-      vars:
-        query_username: "[?secret == '{{ ss_secret }}'].username | [0]"
-        query_pw: "[?secret == '{{ ss_secret }}'].pw | [0]"
-      delegate_to: "{{ ansible_controller }}"
-
-
-################################## Server Operations
 
     - name: Gather facts
       ansible.builtin.setup:
 
-    - name: Install package
-      ansible.builtin.package:
-        name: httpd
-        state: latest
-
-#################################
-
-    - name: Check-in
-      ansible.builtin.include_role:
-        name: secretserver
-        tasks_from: check-in
-        apply:
-          delegate_to: "{{ ansible_controller }}"
-          no_log: true
-      loop: "{{ ss_secrets_all_final }}"
-      loop_control:
-        loop_var: outer_item
-      run_once: true
+#    - name: Install package
+#      ansible.builtin.package:
+#        name: httpd
+#        state: latest
 
 ```
 
