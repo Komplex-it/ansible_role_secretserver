@@ -37,6 +37,14 @@ Requirements
     python3.12 -m pip install python-tss-sdk jmespath # install the python modules under that same python version.
     ```
 
+(3.) Kerberos requirements:
+
+    ```bash
+    yum install gcc python3.11-devel krb5-workstation krb5-devel krb5-libs
+    python3.11 -m pip install pywinrm pywinrm[kerberos]
+    *edit /etc/krb5.conf* # see: https://docs.ansible.com/ansible/latest/os_guide/windows_winrm.html#kerberos
+    ```
+
 
 Role Variables
 --------------
