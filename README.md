@@ -50,6 +50,7 @@ Role Variables
 --------------
 
 1. Define list with secrets to fetch including path and service account in group_vars/all/xx (will probably be moved to roles/secretserver/vars/main.yml at some point, but that doesnt work for now):
+
     Example of a group_vars/all/secretserver.yml:
 
     ```yaml
@@ -68,6 +69,7 @@ Role Variables
     ```
 
 2. Define what secret each server/group should use, either directly in the inventory or via group vars.
+
     Example of setting it in an inventory ini file:
 
     ```ini
@@ -79,13 +81,11 @@ Role Variables
     ss_secret=PAM-DomainAdmin01
 
 
-
     [dmz_demo_local]
     web01.dmz.demo.local
 
     [dmz_demo_local:vars]
     ss_secret=PAM-DmzDomainAdmin01
-
 
 
     [workgroup_local]
