@@ -93,7 +93,15 @@ Role Variables
 
     [workgroup_local:vars]
     ss_secret=Administrator_{{ inventory_hostname }}
-    unique_secret=true
+    ```
+
+3. Optional settings in ansible.cfg.
+
+    Some recommended settings in ansible.cfg:
+
+    ```cfg
+    [defaults]
+    display_skipped_hosts = false # there will be a lot of output from skipped tasks without this.
     ```
 
 
@@ -110,6 +118,7 @@ Example Playbook
 - name: Delinea Secret Server demo
   hosts: all
   gather_facts: false
+  force_handlers: true
   vars:
     ansible_controller: localhost
 

@@ -29,21 +29,33 @@
 
 ## List of secrets
 
+# if the value of the hostvar ss_secret is found in the ss_secrets_unique list, add that entry to all_unique_secrets
 - name: Create list of unique secrets to fetch
   set_fact:
-    all_unique_secrets: "{{ all_unique_secrets | default([]) + hostvars[item]['ss_secrets_unique'] }}"
+    all_unique_secrets: "{{ all_unique_secrets | default([]) + hostvars[item]['ss_secrets_unique'] | selectattr('secret', 'equalto', hostvars[item]['ss_secret']) | list }}"
   delegate_to: "{{ ansible_controller }}"
   run_once: true
   with_items: "{{ groups['all'] }}"
-  when: hostvars[item]['unique_secret'] is defined
-  #  no_log: true
+  when:
+    - ss_secrets_unique is defined
+    - hostvars[item]['ss_secret'] in hostvars[item]['ss_secrets_unique'] | map(attribute='secret') | list
+  no_log: true
 
+# merge lists to have a complete list of secrets to fetch
 - name: Merge list of unique secrets and shared secrets
   set_fact:
     ss_secrets_all: "{{ ss_secrets + all_unique_secrets }}"
   delegate_to: "{{ ansible_controller }}"
   run_once: true
   when: all_unique_secrets is defined
+
+# if no unique secrets defined
+- name: Merge list of unique secrets and shared secrets
+  set_fact:
+    ss_secrets_all: "{{ ss_secrets }}"
+  delegate_to: "{{ ansible_controller }}"
+  run_once: true
+  when: all_unique_secrets is not defined
 
 ## Fetch secrets
 
@@ -53,7 +65,7 @@
     tasks_from: fetch_secret
     apply:
       delegate_to: "{{ ansible_controller }}"
-      #      no_log: true
+      no_log: true
   loop: "{{ ss_secrets_all }}"
   loop_control:
     loop_var: outer_item
