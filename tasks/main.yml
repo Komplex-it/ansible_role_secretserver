@@ -66,10 +66,21 @@
     apply:
       delegate_to: "{{ ansible_controller }}"
       no_log: true
+      ignore_errors: true
   loop: "{{ ss_secrets_all }}"
   loop_control:
     loop_var: outer_item
   run_once: true
+
+
+## DEBUG
+- name: debug show array
+  ansible.builtin.debug:
+    var: ss_secrets_all_final
+  delegate_to: "{{ ansible_controller }}"
+  run_once: true
+##
+
 
 ## Set username and password vars
 
@@ -95,6 +106,5 @@
   vars:
     query_pw: "[?secret == '{{ ss_secret }}'].pw | [0]"
   delegate_to: "{{ ansible_controller }}"
-
 
 
