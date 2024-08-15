@@ -35,7 +35,8 @@
     all_unique_secrets: "{{ all_unique_secrets | default([]) + hostvars[item]['ss_secrets_unique'] | selectattr('secret', 'equalto', hostvars[item]['ss_secret']) | list }}"
   delegate_to: "{{ ansible_controller }}"
   run_once: true
-  with_items: "{{ groups['all'] }}"
+  with_items: "{{ ansible_play_hosts_all }}"
+  #with_items: "{{ groups['all'] }}"
   when:
     - ss_secrets_unique is defined
     - hostvars[item]['ss_secret'] in hostvars[item]['ss_secrets_unique'] | map(attribute='secret') | list
