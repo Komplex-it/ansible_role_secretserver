@@ -75,11 +75,11 @@
 
 
 ## DEBUG
-- name: debug show array
-  ansible.builtin.debug:
-    var: ss_secrets_all_final
-  delegate_to: "{{ ansible_controller }}"
-  run_once: true
+#- name: debug show array
+#  ansible.builtin.debug:
+#    var: ss_secrets_all_final
+#  delegate_to: "{{ ansible_controller }}"
+#  run_once: true
 ##
 
 
