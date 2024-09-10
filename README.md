@@ -102,6 +102,8 @@ Role Variables
     ```cfg
     [defaults]
     display_skipped_hosts = false # there will be a lot of output from skipped tasks without this.
+    log_path = /var/log/ansible.log
+    stdout_callback = yaml
     ```
 
 
