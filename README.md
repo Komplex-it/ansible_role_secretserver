@@ -193,15 +193,83 @@ Example Playbook
 #          ServiceAccount2:
 #            password: "{{ serviceaccount2_password }}"
 
-
     - name: Gather facts
       ansible.builtin.setup:
 
-#    - name: Install package
-#      ansible.builtin.package:
-#        name: httpd
-#        state: latest
 
+#####  Windows servers patch
+
+
+    - name: Search for all security, critical, and definition updates
+      ansible.windows.win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+          - DefinitionUpdates
+          - UpdateRollups
+          - "*"
+        state: searched
+        log_path: C:\ansible_wu.txt
+      register: updates_available
+
+    - name: List available updates
+      ansible.builtin.debug:
+        msg: |
+          Available update count: {{ updates_available.found_update_count }}
+          Available updates:
+          {% for title in updates_available | json_query('updates.* | [?installed == `false`].title') %}
+            - {{ title }}
+          {% endfor %}
+          {{'#'}}
+          {{'#'}}
+
+    - name: Install updates prompt
+      ansible.builtin.pause:
+        prompt: "Install updates? (y/n)"
+        echo: true
+      register: confirm_install_updates
+      run_once: true
+
+    - name: Install all security, critical, and definition updates
+      ansible.windows.win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+          - DefinitionUpdates
+          - UpdateRollups
+        log_path: C:\ansible_wu.txt
+        reboot: true
+        reboot_timeout: 3600
+      become: true
+      become_method: runas
+      become_user: SYSTEM
+      register: updates_installed
+      when:
+        - updates_available.found_update_count > 0
+        - confirm_install_updates.user_input == 'y'
+
+    - name: List installled updates
+      ansible.builtin.debug:
+        msg: |
+          Installed update count: {{ updates_installed.installed_update_count }}
+          Installed updates:
+          {% for title in updates_installed | json_query('updates.* | [?installed == `true`].title') %}
+            - {{ title }}
+          {% endfor %}
+          {{'#'}}
+          {{'#'}}
+      when: updates_installed.changed
+
+######## DEBUG: show credentials
+
+    - name: Show credentials before check-in
+      ansible.builtin.debug:
+        msg: |
+          Username: {{ ansible_user }}
+          Password: {{ ansible_password }}
+          {{'#'}}
+          {{'#'}}
+      delegate_to: "{{ ansible_controller }}"
 ```
 
 
