@@ -42,7 +42,51 @@ Requirements
     ```bash
     yum install gcc python3.11-devel krb5-workstation krb5-devel krb5-libs
     python3.11 -m pip install pywinrm pywinrm[kerberos]
-    *edit /etc/krb5.conf* # see: https://docs.ansible.com/ansible/latest/os_guide/windows_winrm.html#kerberos
+    vim /etc/krb5.conf # see: https://docs.ansible.com/ansible/latest/os_guide/windows_winrm.html#kerberos
+
+        # EXAMPLE krb5.conf:
+        # To opt out of the system crypto-policies configuration of krb5, remove the
+        # symlink at /etc/krb5.conf.d/crypto-policies which will not be recreated.
+        includedir /etc/krb5.conf.d/
+        
+        [logging]
+            default = FILE:/var/log/krb5libs.log
+            kdc = FILE:/var/log/krb5kdc.log
+            admin_server = FILE:/var/log/kadmind.log
+        
+        [libdefaults]
+            dns_lookup_realm = false
+            ticket_lifetime = 24h
+            renew_lifetime = 7d
+            forwardable = true
+            rdns = false
+            pkinit_anchors = FILE:/etc/pki/tls/certs/ca-bundle.crt
+            spake_preauth_groups = edwards25519
+        #    default_realm = EXAMPLE.COM
+            default_ccache_name = KEYRING:persistent:%{uid}
+        
+        [realms]
+        # EXAMPLE.COM = {
+        #     kdc = kerberos.example.com
+        #     admin_server = kerberos.example.com
+        # }
+        DEMO.LOCAL = {
+                kdc = app01.demo.local
+                admin_server = app01.demo.local
+         }
+        DMZ.DEMO.LOCAL = {
+                kdc = web01.dmz.demo.local
+                admin_server = web01.dmz.demo.local
+         }
+        
+        
+        [domain_realm]
+        # .example.com = EXAMPLE.COM
+        # example.com = EXAMPLE.COM
+        .demo.local = DEMO.LOCAL
+        demo.local = DEMO.LOCAL
+        .dmz.demo.local = DMZ.DEMO.LOCAL
+        dmz.demo.local = DMZ.DEMO.LOCAL
     ```
 
 
