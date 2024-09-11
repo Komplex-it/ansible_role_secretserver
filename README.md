@@ -95,7 +95,7 @@ Requirements
 Role Variables
 --------------
 
-1. Define list with secrets to fetch including path and service account in group_vars/all/xx (will probably be moved to roles/secretserver/vars/main.yml at some point, but that doesnt work for now):
+1. Define list with secrets to fetch including path and service account in group_vars/all/xx (will probably be moved under role vars at some point):
 
     Example of a group_vars/all/secretserver.yml:
 
