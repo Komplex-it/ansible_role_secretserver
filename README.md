@@ -206,8 +206,6 @@ Example Playbook
           - SecurityUpdates
           - CriticalUpdates
           - DefinitionUpdates
-          - UpdateRollups
-          - "*"
         state: searched
         log_path: C:\ansible_wu.txt
       register: updates_available
@@ -236,7 +234,6 @@ Example Playbook
           - SecurityUpdates
           - CriticalUpdates
           - DefinitionUpdates
-          - UpdateRollups
         log_path: C:\ansible_wu.txt
         reboot: true
         reboot_timeout: 3600
