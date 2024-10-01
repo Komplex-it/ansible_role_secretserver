@@ -87,7 +87,8 @@
 
 - name: Set username for domain logins
   ansible.builtin.set_fact:
-    ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}@{{ ss_secrets_all_final | json_query(query_domain) }}"
+    ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}@{{ ss_secrets_all_final | json_query(query_domain) }}" # use this is the username field does not include the domain in secretserver
+#   ansible_user: "{{ ss_secrets_all_final | json_query(query_username) }}" # use this if the username field includes the domain in secretserver
   vars:
     query_username: "[?secret == '{{ ss_secret }}'].username | [0]"
     query_domain: "[?secret == '{{ ss_secret }}'].domain | [0]"
